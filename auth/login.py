@@ -1,5 +1,5 @@
 import time
-from config.settings import settings
+from core.config import settings
 from auth.selectors import LoginPageSelectors, MFASelectors
 from drivers.browser import Browser
 

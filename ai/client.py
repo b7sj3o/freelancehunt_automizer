@@ -1,5 +1,5 @@
 import json
-from config.settings import settings
+from core.config import settings
 from openai import OpenAI
 
 

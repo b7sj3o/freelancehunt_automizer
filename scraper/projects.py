@@ -1,9 +1,10 @@
 import re
+import time
 
 from selenium.common.exceptions import NoSuchElementException
 
 from ai.prompts import BASE_PROMPT
-from config.settings import settings
+from core.config import settings
 from drivers.browser import Browser
 from schemas.project import ProjectSchema
 from scraper.selectors import ProjectsSelector, ProjectSelector
@@ -32,8 +33,9 @@ class ProjectsScraper:
         return 0
 
 
-    def parse_projects(self) -> list[ProjectSchema]:
-        self.driver.get(settings.FREELANCEHUNT_PROJECTS_PAGE)
+
+    def parse_projects(self, page: int = 1) -> list[ProjectSchema]:
+        self.driver.get(f"{settings.FREELANCEHUNT_PROJECTS_PAGE}&page={page}")
 
         jobs = []
         rows = self.driver.find_elements(*ProjectsSelector.ALL_PROJECTS)
@@ -78,6 +80,9 @@ class ProjectsScraper:
 
         prompt = BASE_PROMPT.format(project_description=description)
         message = AI.prompt_to_ai(prompt)
+
+        if message == "false":
+            return False
         
         # click "Place bid"
         place_bid_button = self.driver.find_element(*ProjectSelector.PLACE_BID_BUTTON)

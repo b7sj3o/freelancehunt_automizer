@@ -6,6 +6,9 @@ load_dotenv()
 
 class Settings:
     def __init__(self):
+        # Database
+        self.DATABASE_URL = os.getenv("DATABASE_URL")
+
         # Freelancehunt pages
         self.FREELANCEHUNT_LOGIN_PAGE = os.getenv("FREELANCEHUNT_LOGIN_PAGE")
         self.FREELANCEHUNT_PROJECTS_PAGE = os.getenv("FREELANCEHUNT_PROJECTS_PAGE")
