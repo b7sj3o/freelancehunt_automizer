@@ -3,30 +3,56 @@ from sqlalchemy import select
 from core.logger_config import setup_logger
 from db import Session
 from db.models import Project
-from schemas.project import ProjectSchema, CreateProjectSchema
+from schemas.project import CreateProjectSchema, UpdateProjectSchema
 
 
 logger = setup_logger(name="requests", log_file="requests.log")
 
-def get_projects() -> list[ProjectSchema]:
+def get_projects() -> list[Project]:
     with Session() as session:
         return session.scalars(select(Project)).all()
 
 
-def get_project(name: str) -> ProjectSchema|None:
+def get_active_projects() -> list[Project]:
     with Session() as session:
-        return session.scalars(select(Project).where(Project.name == name)).first()
+        return session.scalars(
+            select(Project)
+            .where(Project.is_bid_placed.is_(False))
+            .where(Project.is_bid_skipped.is_(False))
+        ).all()
+
+def get_project(link: str) -> Project|None:
+    with Session() as session:
+        return session.scalars(select(Project).where(Project.link == link)).first()
 
 
-def create_project(data: CreateProjectSchema) -> ProjectSchema:
+def create_projects(data: list[CreateProjectSchema]) -> list[Project]:
     with Session() as session:
         try:
-            project = Project(**data.model_dump())
-            session.add(project)
+            projects = [Project(**project.model_dump()) for project in data]
+            session.add_all(projects)
             session.commit()
-            session.refresh(project)
+            for project in projects:
+                session.refresh(project)
 
-            logger.info(f"Project created: {project.title}")
-            return ProjectSchema(**project.model_dump())
+            logger.info(f"Projects created: {[project.title for project in projects]}")
+            return projects
         except:
-            logger.exception("Error creating project")
+            logger.exception("Error creating projects")
+
+
+def update_project(project_id: int, data: UpdateProjectSchema) -> Project:
+    with Session() as session:
+        project = session.scalars(select(Project).where(Project.id == project_id)).first()
+
+        if not project:
+            logger.error(f"Project with id {project_id} not found")
+            raise ValueError(f"Project with id {project_id} not found")
+
+        for key, value in data.model_dump(exclude_none=True, exclude_unset=True).items():
+            setattr(project, key, value)
+
+        session.commit()
+        session.refresh(project)
+
+        return project

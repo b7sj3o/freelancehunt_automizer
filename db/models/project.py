@@ -10,6 +10,8 @@ class Project(Base):
     link: Mapped[str] = mapped_column(nullable=False)
     price: Mapped[int] = mapped_column(nullable=True)
 
+    bid_message: Mapped[str] = mapped_column(nullable=True)
+
     is_bid_placed: Mapped[bool] = mapped_column(default=False)
     is_bid_skipped: Mapped[bool] = mapped_column(default=False)
 

@@ -18,8 +18,8 @@ class Settings:
         self.FREELANCEHUNT_PASSWORD = os.getenv("FREELANCEHUNT_PASSWORD")
 
         # Default values
-        self.DEFAULT_DAYS = int(os.getenv("DEFAULT_DAYS"))
-        self.DEFAULT_PRICE = int(os.getenv("DEFAULT_PRICE"))
+        self.DEFAULT_DAYS = 1
+        self.DEFAULT_PRICE_UAH = 5000
 
         # Selenium settings
         self.CHROMEDRIVER_PATH = os.getenv("CHROMEDRIVER_PATH")
@@ -33,6 +33,15 @@ class Settings:
         self.AI_TOP_P: float = float(os.getenv("AI_TOP_P"))
         self.AI_MAX_TOKENS: int = int(os.getenv("AI_MAX_TOKENS"))
         self.AI_SYSTEM_CONTENT: str = os.getenv("AI_SYSTEM_CONTENT")
+
+        # Currency
+        # TODO: можна апішку юзанути для актуальних курсів валют
+        self.ALLOWED_CURRENCIES: dict[str, int] = {
+            "UAH": 1,
+            "EUR": 47,
+            "USD": 42,
+            "PLN": 12,
+        }
 
         # Initialize client
         self.client = OpenAI(

@@ -1,8 +1,13 @@
 import time
 
+from db import Base, engine
+from db.requests import get_active_projects
+from auth.login import Login
 from drivers.browser import Browser
 from scraper.projects import ProjectsScraper
-from auth.login import Login
+from core.logger_config import setup_logger
+
+logger = setup_logger(name="main", log_file="main.log")
 
 class Main:
     def __init__(self):
@@ -10,10 +15,12 @@ class Main:
         self.login = Login(self.browser)
         self.projects_scraper = ProjectsScraper(self.browser)
 
-    def run(self): 
-        # self.login.login()
+        Base.metadata.create_all(bind=engine)
 
-        def get_pages(tries: int = 3) -> tuple:
+    def run(self): 
+        self.login.login()
+
+        def get_pages_range(tries: int = 5) -> tuple:
             if tries == 0:
                 raise ValueError("All tries were exceeded")
             pages = input("Enter amount of pages you want to parse (to) or (from,to)")
@@ -27,20 +34,25 @@ class Main:
             if n_from.isdigit() and n_to.isdigit():
                 return (int(n_from), int(n_to)+1)
             else:
-                return get_pages(tries-1)
+                return get_pages_range(tries-1)
 
-        for page in range(*get_pages()):
-            projects = self.projects_scraper.parse_projects(page)
+        # Тут просто зберігаємо в бд
+        for page in range(*get_pages_range()):
+            self.projects_scraper.save_projects_to_db(page)
 
-            for project in projects:
-                is_bid_placed = self.projects_scraper.parse_project(project.link)
+        # Тут парсимо вже з бд всі, що не мають ставки
+        projects = get_active_projects()
+        for project in projects:
+            is_bid_placed = self.projects_scraper.parse_project(project)
 
-                if is_bid_placed:
-                    print(f"Bid placed for {project.link}")
-                else:
-                    print(f"bid was not placed for {project.link}")
+            if is_bid_placed:
+                print(f"Bid placed for {project.link}")
+            else:
+                print(f"bid was not placed for {project.link}")
 
-        time.sleep(1000)
+        time.sleep(5)
+
+        logger.info("All projects were parsed and saved to db")
 
 
 if __name__ == "__main__":

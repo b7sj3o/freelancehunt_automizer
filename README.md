@@ -21,17 +21,6 @@
 
 ---
 
-### Структура проєкту
-- `main.py` — точка входу; координує логін та парсинг/ставки
-- `drivers/browser.py` — ініціалізація WebDriver, утиліти очікувань
-- `auth/login.py`, `auth/selectors.py` — логін, MFA
-- `scraper/projects.py`, `scraper/selectors.py` — парсинг списку та сторінки проєкту
-- `schemas/project.py` — типи даних (Pydantic)
-- `ai/client.py`, `ai/prompts.py` — робота з OpenRouter та промпт для генерації повідомлень
-- `config/settings.py` — завантаження `.env` і конфігурація
-
----
-
 ### Вимоги
 - Встановлений Google Chrome
 - Відповідний ChromeDriver (файл `chromedriver.exe` у корені або шлях у `.env`)
@@ -42,17 +31,16 @@
 
 ### Установка
 
-Варіант A — через Poetry (рекомендовано):
+1. Встановлення pipx - скористайтесь <a href="https://pipx.pypa.io/stable/installation/">цією документацією</a>
+
+2. Встановлення Poetry:
 ```bash
-pip install poetry
-poetry install
+pipx install poetry
 ```
 
-Варіант B — через venv/pip:
+3. Встановлення залежностей:
 ```bash
-python -m venv .venv
-.venv\Scripts\activate
-pip install -r <буде згенеровано Poetry>  # або: pip install selenium pydantic openai python-dotenv beautifulsoup4 sqlalchemy alembic psycopg-binary
+poetry install
 ```
 
 ---
@@ -72,17 +60,17 @@ DEFAULT_PRICE=1000
 
 # Selenium
 # Абсолютний шлях до ChromeDriver (Windows-приклад нижче)
-CHROMEDRIVER_PATH=D:\\Desktop\\business\\freelancehunt-automizer\\chromedriver.exe
+CHROMEDRIVER_PATH=D:\\Projects\\freelancehunt-automizer\\chromedriver.exe
 
 # OpenRouter
 OPENROUTER_API_KEY=sk-or-...
-OPENROUTER_AI_MODEL=meta-llama/llama-3.1-70b-instruct:free
+OPENROUTER_AI_MODEL=openai/gpt-oss-120b 
 
-# AI-параметри
-AI_TEMPERATURE=0.7
-AI_TOP_P=0.9
-AI_MAX_TOKENS=512
-AI_SYSTEM_CONTENT=You are a helpful assistant
+# AI-параметри (мої налаштування, які чудово працюють)
+AI_TEMPERATURE=0.5
+AI_TOP_P=0.95
+AI_MAX_TOKENS=1000
+AI_SYSTEM_CONTENT="Language answer: ..."
 ```
 
 Примітка: значення моделі ви можете змінити на будь-яку доступну у вашому акаунті OpenRouter.
@@ -91,47 +79,12 @@ AI_SYSTEM_CONTENT=You are a helpful assistant
 
 ### Запуск
 
-Poetry:
 ```bash
 poetry run python main.py
-```
-
-Або без Poetry (з активованим venv):
-```bash
-.venv\Scripts\python.exe main.py
 ```
 
 Під час логіну скрипт попросить **MFA-код** у консолі. Введіть 6-значний код — після успішної перевірки автоматизація продовжиться.
 
 ---
-
-### Як це працює (коротко)
-1. `main.py` створює `Browser`, `Login` та `ProjectsScraper`.
-2. `Login.login()` відкриває сторінку входу, вводить email/пароль, очікує MFA й завершує сесію логіну.
-3. `ProjectsScraper.parse_projects()` переходить на сторінку проєктів, збирає список (тема, посилання, кількість ставок).
-4. Для кожного посилання `parse_project()`:
-   - перевіряє, чи вже подано ставку;
-   - зчитує опис, формує промпт (`ai/prompts.py`) і через `ai/client.py` отримує текст повідомлення;
-   - відкриває форму, заповнює повідомлення/термін/суму і відправляє.
-
----
-
-### Поради та усунення несправностей
-- **ChromeDriver не сумісний:** оновіть `chromedriver.exe` під вашу версію Chrome та перевірте шлях у `CHROMEDRIVER_PATH`.
-- **MFA/вхід не проходить:** перевірте селектори у `auth/selectors.py` (інтерфейс міг змінитись) та значення `.env`.
-- **AI не відповідає:** перевірте `OPENROUTER_API_KEY`, ліміти, назву моделі та мережу.
-- **Селектори сторінок змінились:** оновіть константи у `scraper/selectors.py`.
-- **Cloudflare/anti-bot:** іноді сайти застосовують додаткові перевірки. Запускайте скрипт не надто часто, не використовуйте headless на старті, за потреби додайте очікування.
-
----
-
-### Безпека
-- Зберігайте `.env` поза системами контролю версій.
-- Обережно з обліковими даними та API ключами.
-
----
-
-### Ліцензія
-Проєкт поширюється за ліцензією MIT (див. `pyproject.toml`).
 
 

@@ -5,6 +5,7 @@ class ProjectsSelector:
 
     TITLE = (By.XPATH, ".//a[contains(@class,'visitable')]")
     BIDS = (By.XPATH, ".//*[self::span or self::small][contains(., 'став')]")
+    PRICE = (By.XPATH, ".//div[contains(@class,'price')]")
 
 
 class ProjectSelector:
@@ -20,8 +21,10 @@ class ProjectSelector:
         "//button[@id='add-0' or @id='btn-submit-0']"
     )
 
-    ALREADY_BID = (By.CLASS_NAME, "alert-info")
-    ALREADY_BID = (By.XPATH, "//*[contains(@class, 'alert-info') and contains(., 'Ви вже зробили ставку на цей проєкт')]")
+    TOO_MANY_BIDS = (By.XPATH, "//*[contains(@class, 'alert-info') and contains(., 'Ви додали занадто багато ставок за останню добу, почекайте трохи перед додаванням нової ставки.')]")
+
+    # ALREADY_BID = (By.CLASS_NAME, "alert-info")
+    # ALREADY_BID = (By.XPATH, "//*[contains(@class, 'alert-info') and contains(., 'Ви вже зробили ставку на цей проєкт')]")
 
 
 
