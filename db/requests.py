@@ -37,22 +37,27 @@ def create_projects(data: list[CreateProjectSchema]) -> list[Project]:
 
             logger.info(f"Projects created: {[project.title for project in projects]}")
             return projects
-        except:
-            logger.exception("Error creating projects")
+        except Exception as e:
+            logger.error(f"Error creating projects: {e}")
 
 
 def update_project(project_id: int, data: UpdateProjectSchema) -> Project:
     with Session() as session:
         project = session.scalars(select(Project).where(Project.id == project_id)).first()
 
+
         if not project:
             logger.error(f"Project with id {project_id} not found")
             raise ValueError(f"Project with id {project_id} not found")
 
-        for key, value in data.model_dump(exclude_none=True, exclude_unset=True).items():
+        data_dict = data.model_dump(exclude_none=True, exclude_unset=True)
+
+        for key, value in data_dict.items():
             setattr(project, key, value)
 
         session.commit()
         session.refresh(project)
+        
+        logger.info(f"Project updated: {project.title}, data: {data_dict}")
 
         return project

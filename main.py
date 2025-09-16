@@ -42,13 +42,26 @@ class Main:
 
         # Тут парсимо вже з бд всі, що не мають ставки
         projects = get_active_projects()
+        projects_bid_placed = 0
+        projects_skipped = 0
+        
+
         for project in projects:
-            is_bid_placed = self.projects_scraper.parse_project(project)
+            try:
+                is_bid_placed = self.projects_scraper.parse_project(project)
+            except:
+                logger.error(f"Failed to parse project: {project.link}")
+                continue
 
             if is_bid_placed:
                 print(f"Bid placed for {project.link}")
+                projects_bid_placed += 1
             else:
                 print(f"bid was not placed for {project.link}")
+                projects_skipped += 1
+
+        print(f"Projects bid placed: {projects_bid_placed}")
+        print(f"Projects skipped: {projects_skipped}")
 
         time.sleep(5)
 

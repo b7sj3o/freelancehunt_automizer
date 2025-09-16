@@ -43,7 +43,7 @@ class ProjectsScraper:
             price, currency = price_text.split()
             return int(price) * settings.ALLOWED_CURRENCIES[currency]
         except Exception as e:
-            logger.exception(f"Failed to extract price")
+            logger.error(f"Failed to extract price, error: {e}")
             return settings.DEFAULT_PRICE_UAH
 
     def save_projects_to_db(self, page: int = 1) -> None:
@@ -71,7 +71,7 @@ class ProjectsScraper:
                 ))
 
             except Exception as e:
-                logger.exception(f"Failed to parse project: {e}")
+                logger.error(f"Failed to parse project: {e}")
 
         create_projects(jobs)
 
@@ -79,8 +79,25 @@ class ProjectsScraper:
     def parse_project(self, project: Project) -> bool:
         self.driver.get(project.link)
 
-        if self.driver.find_element(*ProjectSelector.TOO_MANY_BIDS):
+        try:
+            self.driver.find_element(*ProjectSelector.NO_MORE_BIDS)
+            update_project(project.id, UpdateProjectSchema(is_bid_skipped=True))
+            return False
+        except Exception as e:
+            pass
+
+        try:
+            self.driver.find_element(*ProjectSelector.TOO_MANY_BIDS)
             raise ValueError("Too many bids")
+        except Exception as e:
+            pass
+
+        try:
+            self.driver.find_element(*ProjectSelector.ALREADY_BID)
+            update_project(project.id, UpdateProjectSchema(is_bid_placed=True))
+            return True
+        except Exception as e:
+            pass
 
         # get message
         description_el = self.driver.find_element(*ProjectSelector.DESCRIPTION)
@@ -93,8 +110,6 @@ class ProjectsScraper:
             update_project(project.id, UpdateProjectSchema(is_bid_skipped=True))            
             return False
         
-        update_project(project.id, UpdateProjectSchema(bid_message=message))
-
         # click "Place bid"
         place_bid_button = self.driver.find_element(*ProjectSelector.PLACE_BID_BUTTON)
         place_bid_button.click()
@@ -115,7 +130,7 @@ class ProjectsScraper:
         place_bid_button = self.driver.find_element(*ProjectSelector.SUBMIT_BID_BUTTON)
         place_bid_button.click()
 
-        update_project(project.id, UpdateProjectSchema(is_bid_placed=True))
+        update_project(project.id, UpdateProjectSchema(bid_message=message, is_bid_placed=True))
         return True
 
 

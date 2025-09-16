@@ -8,6 +8,12 @@ class Login:
         self.browser = browser
 
     def submit_mfa_code(self, max_tries: int = 3) -> bool:
+        # Можливо 2-ох факторки немає, тому пропускаємо
+        try:
+            self.browser.wait_until(MFASelectors.MFA_INPUT)
+        except Exception as e:
+            return True
+        
         if max_tries == 0:
             print("Max tries reached\n")
             return False
@@ -17,6 +23,7 @@ class Login:
         if not mfa_code or len(mfa_code) != 6 or not mfa_code.isdigit():
             print("Invalid MFA code format\n")
             return self.submit_mfa_code(max_tries-1)
+
 
         mfa_input = self.browser.wait_until(MFASelectors.MFA_INPUT)
         mfa_input.send_keys(mfa_code)

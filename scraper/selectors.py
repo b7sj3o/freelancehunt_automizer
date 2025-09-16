@@ -24,7 +24,9 @@ class ProjectSelector:
     TOO_MANY_BIDS = (By.XPATH, "//*[contains(@class, 'alert-info') and contains(., 'Ви додали занадто багато ставок за останню добу, почекайте трохи перед додаванням нової ставки.')]")
 
     # ALREADY_BID = (By.CLASS_NAME, "alert-info")
-    # ALREADY_BID = (By.XPATH, "//*[contains(@class, 'alert-info') and contains(., 'Ви вже зробили ставку на цей проєкт')]")
+    ALREADY_BID = (By.XPATH, "//*[contains(@class, 'alert-info') and contains(., 'Ви вже зробили ставку на цей проєкт')]")
+    NO_MORE_BIDS = (By.XPATH, "//*[contains(@class, 'alert-info') and contains(., 'Ставки на проєкт не приймаються.')]")
+    
 
 
 
