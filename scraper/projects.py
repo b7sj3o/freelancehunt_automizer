@@ -43,7 +43,7 @@ class ProjectsScraper:
             price, currency = price_text.split()
             return int(price) * settings.ALLOWED_CURRENCIES[currency]
         except Exception as e:
-            logger.error(f"Failed to extract price, error: {e}")
+            logger.error(f"Failed to extract price")
             return settings.DEFAULT_PRICE_UAH
 
     def save_projects_to_db(self, page: int = 1) -> None:
@@ -99,38 +99,44 @@ class ProjectsScraper:
         except Exception as e:
             pass
 
-        # get message
-        description_el = self.driver.find_element(*ProjectSelector.DESCRIPTION)
-        description = remove_markup(description_el.get_attribute("innerHTML"))
+        try:
+            # get message
+            description_el = self.driver.find_element(*ProjectSelector.DESCRIPTION)
+            description = remove_markup(description_el.get_attribute("innerHTML"))
 
-        prompt = BASE_PROMPT.format(project_description=description)
-        message = AI.prompt_to_ai(prompt)
+            prompt = BASE_PROMPT.format(project_description=description)
+            message = AI.prompt_to_ai(prompt)
 
-        if message == "false":
-            update_project(project.id, UpdateProjectSchema(is_bid_skipped=True))            
+            if message == "false":
+                update_project(project.id, UpdateProjectSchema(is_bid_skipped=True))            
+                return False
+            
+            # click "Place bid"
+            place_bid_button = self.driver.find_element(*ProjectSelector.PLACE_BID_BUTTON)
+            place_bid_button.click()
+
+            # fill message
+            message_input = self.driver.find_element(*ProjectSelector.MESSAGE_INPUT)
+            message_input.send_keys(message)
+
+            # fill days
+            days_input = self.driver.find_element(*ProjectSelector.DAYS_INPUT)
+            days_input.send_keys(settings.DEFAULT_DAYS)
+
+            # fill price
+            price_input = self.driver.find_element(*ProjectSelector.PRICE_INPUT)
+            price_input.send_keys(project.price)
+
+            # click "Place bid"
+            place_bid_button = self.driver.find_element(*ProjectSelector.SUBMIT_BID_BUTTON)
+            place_bid_button.click()
+
+            update_project(project.id, UpdateProjectSchema(bid_message=message, is_bid_placed=True))
+            return True
+        except:
+            logger.exception("500 error")
+            # Хз, будемо скіпати якщо ще якась помилка, бо заєбало вже
+            update_project(project.id, UpdateProjectSchema(is_bid_skipped=True))
             return False
-        
-        # click "Place bid"
-        place_bid_button = self.driver.find_element(*ProjectSelector.PLACE_BID_BUTTON)
-        place_bid_button.click()
-
-        # fill message
-        message_input = self.driver.find_element(*ProjectSelector.MESSAGE_INPUT)
-        message_input.send_keys(message)
-
-        # fill days
-        days_input = self.driver.find_element(*ProjectSelector.DAYS_INPUT)
-        days_input.send_keys(settings.DEFAULT_DAYS)
-
-        # fill price
-        price_input = self.driver.find_element(*ProjectSelector.PRICE_INPUT)
-        price_input.send_keys(project.price)
-
-        # click "Place bid"
-        place_bid_button = self.driver.find_element(*ProjectSelector.SUBMIT_BID_BUTTON)
-        place_bid_button.click()
-
-        update_project(project.id, UpdateProjectSchema(bid_message=message, is_bid_placed=True))
-        return True
 
 

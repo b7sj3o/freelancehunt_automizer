@@ -8,7 +8,7 @@ from schemas.project import CreateProjectSchema, UpdateProjectSchema
 
 logger = setup_logger(name="requests", log_file="requests.log")
 
-def get_projects() -> list[Project]:
+def get_all_projects() -> list[Project]:
     with Session() as session:
         return session.scalars(select(Project)).all()
 
