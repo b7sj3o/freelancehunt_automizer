@@ -26,6 +26,10 @@ class ProjectSelector:
     # ALREADY_BID = (By.CLASS_NAME, "alert-info")
     ALREADY_BID = (By.XPATH, "//*[contains(@class, 'alert-info') and contains(., 'Ви вже зробили ставку на цей проєкт')]")
     NO_MORE_BIDS = (By.XPATH, "//*[contains(@class, 'alert-info') and contains(., 'Ставки на проєкт не приймаються.')]")
+    # PROJECT_WAS_DELETED = (By.XPATH, "//*[contains(@class, 'alert-info') and contains(., 'Проєкт був видалений.')]")
+    ERROR_ALERT = (By.XPATH, "//*[contains(@class, 'alert-error') and contains(., 'Будь ласка, виправте помилки у формі нижче.')]")
+    ERROR_TEXT = (By.XPATH, "//*[contains(@class, 'error-text')]")
+
     
 
 

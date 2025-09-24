@@ -6,6 +6,7 @@ class ProjectSchema(BaseModel):
     title: str
     link: str
     price: int
+    currency: str
 
     bid_message: str|None = None
 
@@ -17,6 +18,7 @@ class CreateProjectSchema(BaseModel):
     title: str
     link: str
     price: int
+    currency: str
 
     is_bid_placed: bool = False
     is_bid_skipped: bool = False

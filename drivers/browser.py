@@ -33,5 +33,5 @@ class Browser:
         try:
             return WebDriverWait(self.driver, timeout).until(EC.presence_of_element_located(locator))
         except Exception as e:
-            logger.error(f"Failed to wait until {locator}, error: {e}")
+            logger.error(f"Failed to wait until {locator}")
             raise e

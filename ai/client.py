@@ -1,12 +1,13 @@
 import json
 from core.config import settings
 from openai import OpenAI
+from core.logger_config import setup_logger
 
-
+logger = setup_logger(name="ai", log_file="ai.log")
 
 class AI:
     @classmethod
-    def prompt_to_ai(cls, prompt: str) -> str | None:
+    def prompt_to_ai(cls, prompt: str, max_tries: int = 3) -> str | None:
         completion = settings.client.chat.completions.create(
             model=settings.OPENROUTER_AI_MODEL,
             messages=[
@@ -26,17 +27,14 @@ class AI:
         )
         result = completion.choices[0].message.content
 
-        try:
-            return result
-        except json.JSONDecodeError:
-            print("=======================")
-            print(result)
-            print("=======================")
-            return
+        if not result:
+            if max_tries > 0:
+                return cls.prompt_to_ai(prompt, max_tries - 1)
+            else:
+                logger.error(f"AI returned an empty response")
+                return None
 
-            # if max_tries > 0:
-            #     return cls.prompt_to_ai(prompt, max_tries - 1)
-            # else:
-            #     raise json.JSONDecodeError("Failed to parse JSON", result, 0)
+            return result
+
 
     

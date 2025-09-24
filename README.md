@@ -56,7 +56,7 @@ FREELANCEHUNT_PASSWORD=your_password
 
 # Значення за замовчуванням для заявки
 DEFAULT_DAYS=3
-DEFAULT_PRICE=1000
+DEFAULT_PRICE_UAH=1000
 
 # Selenium
 # Абсолютний шлях до ChromeDriver (Windows-приклад нижче)

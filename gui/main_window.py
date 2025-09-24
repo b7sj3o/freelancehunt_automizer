@@ -99,6 +99,9 @@ class FreelancehuntGUI:
         # Оновлюємо список проектів
         self.refresh_projects()
         
+        # Ініціалізуємо опції для кінцевої сторінки
+        self.on_start_page_changed()
+        
     def create_widgets(self):
         # Головний notebook для вкладок
         self.notebook = ttk.Notebook(self.root)
@@ -188,9 +191,45 @@ class FreelancehuntGUI:
         
         # Налаштування парсингу
         ttk.Label(control_frame, text="Сторінки для парсингу:").grid(row=0, column=0, sticky=tk.W, pady=5)
-        self.pages_var = tk.StringVar(value="1-5")
-        ttk.Entry(control_frame, textvariable=self.pages_var, width=20).grid(row=0, column=1, sticky=tk.W, padx=(10, 0))
-        ttk.Label(control_frame, text="(приклад: 5 або 1-10)").grid(row=0, column=2, sticky=tk.W, padx=(10, 0))
+        
+        # Фрейм для контролів сторінок
+        pages_frame = ttk.Frame(control_frame)
+        pages_frame.grid(row=0, column=1, sticky=tk.W, padx=(10, 0))
+        
+        # Початкова сторінка (Combobox)
+        ttk.Label(pages_frame, text="Від:").pack(side=tk.LEFT, padx=(0, 5))
+        self.start_page_var = tk.StringVar(value="1")
+        self.start_page_combo = ttk.Combobox(pages_frame, textvariable=self.start_page_var, 
+                                            width=8, state="readonly")
+        self.start_page_combo['values'] = [str(i) for i in range(1, 21)]  # 1-20
+        self.start_page_combo.pack(side=tk.LEFT, padx=(0, 10))
+        self.start_page_combo.bind('<<ComboboxSelected>>', self.on_start_page_changed)
+        
+        # Кінцева сторінка (Combobox)
+        ttk.Label(pages_frame, text="До:").pack(side=tk.LEFT, padx=(0, 5))
+        self.end_page_var = tk.StringVar(value="5")
+        self.end_page_combo = ttk.Combobox(pages_frame, textvariable=self.end_page_var, 
+                                          width=8, state="readonly")
+        self.end_page_combo.pack(side=tk.LEFT, padx=(0, 10))
+        self.end_page_combo.bind('<<ComboboxSelected>>', self.validate_pages)
+        
+        # Індикатор кількості сторінок
+        self.pages_info_var = tk.StringVar(value="(5 сторінок)")
+        self.pages_info_label = ttk.Label(pages_frame, textvariable=self.pages_info_var, 
+                                         font=('Arial', 9, 'italic'), foreground='blue')
+        self.pages_info_label.pack(side=tk.LEFT, padx=(10, 0))
+        
+        # Кнопки швидкого вибору
+        quick_frame = ttk.Frame(control_frame)
+        quick_frame.grid(row=0, column=2, sticky=tk.W, padx=(10, 0))
+        
+        ttk.Label(quick_frame, text="Швидко:").pack(side=tk.LEFT, padx=(0, 5))
+        ttk.Button(quick_frame, text="1-3", command=lambda: self.set_quick_range(1, 3), 
+                  width=6).pack(side=tk.LEFT, padx=(0, 2))
+        ttk.Button(quick_frame, text="1-5", command=lambda: self.set_quick_range(1, 5), 
+                  width=6).pack(side=tk.LEFT, padx=(0, 2))
+        ttk.Button(quick_frame, text="1-10", command=lambda: self.set_quick_range(1, 10), 
+                  width=6).pack(side=tk.LEFT)
         
         # Кнопки керування
         button_frame = ttk.Frame(control_frame)
@@ -203,9 +242,6 @@ class FreelancehuntGUI:
         self.stop_button = ttk.Button(button_frame, text="Зупинити", 
                                      command=self.stop_automation, state=tk.DISABLED)
         self.stop_button.pack(side=tk.LEFT, padx=(0, 10))
-        
-        ttk.Button(button_frame, text="Тільки парсинг", 
-                  command=self.parse_only).pack(side=tk.LEFT)
         
         # Статус
         status_frame = ttk.LabelFrame(main_frame, text="Статус", padding=15)
@@ -341,22 +377,279 @@ class FreelancehuntGUI:
             self.context_menu.post(event.x_root, event.y_root)
             
     def open_project_link(self):
+        """Відкриває посилання на проект у браузері"""
         selected = self.projects_tree.selection()
         if selected:
-            # Тут можна додати логіку відкриття посилання
-            pass
+            try:
+                item = selected[0]
+                project_id = self.projects_tree.item(item, 'values')[0]
+                
+                # Отримуємо проект з бази даних
+                projects = get_all_projects()
+                project = next((p for p in projects if str(p.id) == str(project_id)), None)
+                
+                if project and project.link:
+                    import webbrowser
+                    webbrowser.open(project.link)
+                    logger.info(f"Відкрито посилання: {project.link}")
+                else:
+                    messagebox.showerror("Помилка", "Не вдалося знайти посилання на проект")
+                    
+            except Exception as e:
+                logger.error(f"Помилка відкриття посилання: {e}")
+                messagebox.showerror("Помилка", f"Не вдалося відкрити посилання: {e}")
             
     def copy_project_link(self):
+        """Копіює посилання на проект у буфер обміну"""
         selected = self.projects_tree.selection()
         if selected:
-            # Тут можна додати логіку копіювання посилання
-            pass
+            try:
+                item = selected[0]
+                project_id = self.projects_tree.item(item, 'values')[0]
+                
+                # Отримуємо проект з бази даних
+                projects = get_all_projects()
+                project = next((p for p in projects if str(p.id) == str(project_id)), None)
+                
+                if project and project.link:
+                    # Копіюємо у буфер обміну
+                    self.root.clipboard_clear()
+                    self.root.clipboard_append(project.link)
+                    self.root.update()  # Оновлюємо буфер обміну
+                    
+                    messagebox.showinfo("Успіх", "Посилання скопійовано у буфер обміну!")
+                    logger.info(f"Скопійовано посилання: {project.link}")
+                else:
+                    messagebox.showerror("Помилка", "Не вдалося знайти посилання на проект")
+                    
+            except Exception as e:
+                logger.error(f"Помилка копіювання посилання: {e}")
+                messagebox.showerror("Помилка", f"Не вдалося скопіювати посилання: {e}")
             
     def delete_project(self):
+        """Видаляє проект з бази даних"""
         selected = self.projects_tree.selection()
         if selected:
-            # Тут можна додати логіку видалення проекту
-            pass
+            try:
+                item = selected[0]
+                project_id = self.projects_tree.item(item, 'values')[0]
+                project_title = self.projects_tree.item(item, 'values')[1]
+                
+                # Підтвердження видалення
+                result = messagebox.askyesno(
+                    "Підтвердження видалення", 
+                    f"Ви впевнені, що хочете видалити проект:\n\n'{project_title}'?\n\nЦю дію неможливо скасувати.",
+                    icon='warning'
+                )
+                
+                if result:
+                    # Видаляємо з бази даних
+                    from db import Session
+                    from sqlalchemy import select, delete
+                    from db.models import Project
+                    
+                    with Session() as session:
+                        # Перевіряємо чи існує проект
+                        project = session.scalars(select(Project).where(Project.id == int(project_id))).first()
+                        
+                        if project:
+                            session.delete(project)
+                            session.commit()
+                            
+                            # Видаляємо з таблиці
+                            self.projects_tree.delete(item)
+                            
+                            # Оновлюємо статистику
+                            self.refresh_projects()
+                            
+                            messagebox.showinfo("Успіх", f"Проект '{project_title}' успішно видалено!")
+                            logger.info(f"Видалено проект: {project_title} (ID: {project_id})")
+                        else:
+                            messagebox.showerror("Помилка", "Проект не знайдено в базі даних")
+                            
+            except Exception as e:
+                logger.error(f"Помилка видалення проекту: {e}")
+                messagebox.showerror("Помилка", f"Не вдалося видалити проект: {e}")
+    
+    def mark_project_skipped(self):
+        """Позначає проект як пропущений"""
+        selected = self.projects_tree.selection()
+        if selected:
+            try:
+                item = selected[0]
+                project_id = self.projects_tree.item(item, 'values')[0]
+                project_title = self.projects_tree.item(item, 'values')[1]
+                
+                # Підтвердження
+                result = messagebox.askyesno(
+                    "Підтвердження", 
+                    f"Позначити проект як пропущений:\n\n'{project_title}'?",
+                    icon='question'
+                )
+                
+                if result:
+                    from db import Session
+                    from sqlalchemy import select
+                    from db.models import Project
+                    
+                    with Session() as session:
+                        project = session.scalars(select(Project).where(Project.id == int(project_id))).first()
+                        
+                        if project:
+                            project.is_bid_skipped = True
+                            project.is_bid_placed = False
+                            session.commit()
+                            
+                            # Оновлюємо таблицю
+                            self.refresh_projects()
+                            
+                            messagebox.showinfo("Успіх", f"Проект '{project_title}' позначено як пропущений!")
+                            logger.info(f"Проект позначено як пропущений: {project_title} (ID: {project_id})")
+                        else:
+                            messagebox.showerror("Помилка", "Проект не знайдено в базі даних")
+                            
+            except Exception as e:
+                logger.error(f"Помилка позначення проекту як пропущений: {e}")
+                messagebox.showerror("Помилка", f"Не вдалося позначити проект: {e}")
+    
+    def reset_project_status(self):
+        """Скидає статус проекту (робить його активним)"""
+        selected = self.projects_tree.selection()
+        if selected:
+            try:
+                item = selected[0]
+                project_id = self.projects_tree.item(item, 'values')[0]
+                project_title = self.projects_tree.item(item, 'values')[1]
+                
+                # Підтвердження
+                result = messagebox.askyesno(
+                    "Підтвердження", 
+                    f"Скинути статус проекту (зробити активним):\n\n'{project_title}'?",
+                    icon='question'
+                )
+                
+                if result:
+                    from db import Session
+                    from sqlalchemy import select
+                    from db.models import Project
+                    
+                    with Session() as session:
+                        project = session.scalars(select(Project).where(Project.id == int(project_id))).first()
+                        
+                        if project:
+                            project.is_bid_skipped = False
+                            project.is_bid_placed = False
+                            session.commit()
+                            
+                            # Оновлюємо таблицю
+                            self.refresh_projects()
+                            
+                            messagebox.showinfo("Успіх", f"Статус проекту '{project_title}' скинуто!")
+                            logger.info(f"Статус проекту скинуто: {project_title} (ID: {project_id})")
+                        else:
+                            messagebox.showerror("Помилка", "Проект не знайдено в базі даних")
+                            
+            except Exception as e:
+                logger.error(f"Помилка скидання статусу проекту: {e}")
+                messagebox.showerror("Помилка", f"Не вдалося скинути статус проекту: {e}")
+    
+    def on_start_page_changed(self, event=None):
+        """Обробляє зміну початкової сторінки та оновлює опції для кінцевої"""
+        try:
+            start_num = int(self.start_page_var.get())
+            
+            # Оновлюємо опції для кінцевої сторінки
+            # Починаємо з start_num + 1 до 20
+            end_values = [str(i) for i in range(start_num + 1, 21)]
+            
+            # Якщо немає опцій (start_num >= 20), додаємо тільки start_num
+            if not end_values:
+                end_values = [str(start_num)]
+            
+            self.end_page_combo['values'] = end_values
+            
+            # Якщо поточна кінцева сторінка менша за початкову, встановлюємо мінімальну
+            current_end = int(self.end_page_var.get())
+            if current_end <= start_num:
+                self.end_page_var.set(end_values[0])
+            
+            # Валідуємо сторінки
+            self.validate_pages()
+            
+        except ValueError:
+            logger.error("Помилка обробки зміни початкової сторінки")
+        except Exception as e:
+            logger.error(f"Помилка on_start_page_changed: {e}")
+    
+    def validate_pages(self, event=None):
+        """Валідує та оновлює інформацію про кількість сторінок"""
+        try:
+            start = self.start_page_var.get().strip()
+            end = self.end_page_var.get().strip()
+            
+            # Перевіряємо чи є числа
+            if not start or not end:
+                self.pages_info_var.set("(оберіть сторінки)")
+                self.pages_info_label.configure(foreground='red')
+                return
+            
+            start_num = int(start)
+            end_num = int(end)
+            
+            # Перевіряємо логіку
+            if start_num < 1 or end_num < 1:
+                self.pages_info_var.set("(сторінки >= 1)")
+                self.pages_info_label.configure(foreground='red')
+                return
+                
+            if end_num < start_num:
+                self.pages_info_var.set("(кінець >= початок)")
+                self.pages_info_label.configure(foreground='red')
+                return
+                
+            if end_num > 20:
+                self.pages_info_var.set("(кінець <= 20)")
+                self.pages_info_label.configure(foreground='orange')
+                return
+            
+            # Обчислюємо кількість сторінок
+            pages_count = end_num - start_num + 1
+            
+            if pages_count == 1:
+                self.pages_info_var.set(f"(1 сторінка)")
+            else:
+                self.pages_info_var.set(f"({pages_count} сторінок)")
+                
+            self.pages_info_label.configure(foreground='blue')
+            
+        except ValueError:
+            self.pages_info_var.set("(оберіть числа)")
+            self.pages_info_label.configure(foreground='red')
+        except Exception as e:
+            logger.error(f"Помилка валідації сторінок: {e}")
+    
+    def set_quick_range(self, start, end):
+        """Встановлює швидкий діапазон сторінок"""
+        self.start_page_var.set(str(start))
+        # Оновлюємо опції для кінцевої сторінки
+        self.on_start_page_changed()
+        self.end_page_var.set(str(end))
+        self.validate_pages()
+    
+    def get_pages_range(self):
+        """Отримує діапазон сторінок для парсингу"""
+        try:
+            start = int(self.start_page_var.get().strip())
+            end = int(self.end_page_var.get().strip())
+            
+            if start < 1 or end < start or end > 20:
+                raise ValueError("Неправильний діапазон сторінок")
+                
+            return (start, end + 1)  # +1 бо range() не включає останнє значення
+            
+        except ValueError as e:
+            messagebox.showerror("Помилка", f"Неправильний діапазон сторінок. {e}")
+            return (1, 6)  # Повертаємо за замовчуванням 1-5
         
     def save_settings(self):
         settings_data = {
@@ -366,7 +659,9 @@ class FreelancehuntGUI:
             "api_key": self.api_key_var.get(),
             "model": self.model_var.get(),
             "default_days": self.days_var.get(),
-            "default_price": self.price_var.get()
+            "default_price": self.price_var.get(),
+            "start_page": self.start_page_var.get(),
+            "end_page": self.end_page_var.get()
         }
         
         try:
@@ -387,20 +682,25 @@ class FreelancehuntGUI:
                 self.projects_url_var.set(settings_data.get("projects_url", ""))
                 self.api_key_var.set(settings_data.get("api_key", ""))
                 self.model_var.set(settings_data.get("model", "openai/gpt-4o-mini"))
-                self.days_var.set(settings_data.get("default_days", "3"))
-                self.price_var.set(settings_data.get("default_price", "1000"))
+                self.days_var.set(settings_data.get("default_days", settings.DEFAULT_DAYS))
+                self.price_var.set(settings_data.get("default_price", settings.DEFAULT_PRICE_UAH))
+                self.start_page_var.set(settings_data.get("start_page", "1"))
+                self.end_page_var.set(settings_data.get("end_page", "5"))
+                
+                # Валідуємо сторінки після завантаження
+                self.validate_pages()
         except Exception as e:
             logger.error(f"Помилка завантаження налаштувань: {e}")
             
     def load_from_env(self):
         try:
-            self.email_var.set(getattr(settings, 'FREELANCEHUNT_EMAIL', ''))
-            self.password_var.set(getattr(settings, 'FREELANCEHUNT_PASSWORD', ''))
-            self.projects_url_var.set(getattr(settings, 'FREELANCEHUNT_PROJECTS_PAGE', ''))
-            self.api_key_var.set(getattr(settings, 'OPENROUTER_API_KEY', ''))
-            self.model_var.set(getattr(settings, 'OPENROUTER_AI_MODEL', 'openai/gpt-4o-mini'))
-            self.days_var.set(str(getattr(settings, 'DEFAULT_DAYS', 3)))
-            self.price_var.set(str(getattr(settings, 'DEFAULT_PRICE', 1000)))
+            self.email_var.set(settings.FREELANCEHUNT_EMAIL)
+            self.password_var.set(settings.FREELANCEHUNT_PASSWORD)
+            self.projects_url_var.set(settings.FREELANCEHUNT_PROJECTS_PAGE)
+            self.api_key_var.set(settings.OPENROUTER_API_KEY)
+            self.model_var.set(settings.OPENROUTER_AI_MODEL)
+            self.days_var.set(str(settings.DEFAULT_DAYS))
+            self.price_var.set(str(settings.DEFAULT_PRICE_UAH))
             messagebox.showinfo("Успіх", "Налаштування завантажено з .env файлу!")
         except Exception as e:
             messagebox.showerror("Помилка", f"Не вдалося завантажити з .env: {e}")
@@ -450,18 +750,7 @@ class FreelancehuntGUI:
                 main_app.browser.driver.get(projects_url)
             
             # Парсинг сторінок
-            pages_input = self.pages_var.get().strip()
-            if not pages_input:
-                pages_input = "1-5"
-                
-            if pages_input.isdigit():
-                pages_range = (1, int(pages_input) + 1)
-            elif "," in pages_input or "-" in pages_input:
-                separator = "," if "," in pages_input else "-"
-                n_from, n_to = pages_input.split(separator)
-                pages_range = (int(n_from), int(n_to) + 1)
-            else:
-                pages_range = (1, 6)
+            pages_range = self.get_pages_range()
                 
             self.root.after(0, lambda: self.status_var.set("Парсинг проектів..."))
             self.root.after(0, lambda: self.log_message(f"📄 Парсинг сторінок {pages_range[0]}-{pages_range[1]-1}..."))
@@ -510,55 +799,6 @@ class FreelancehuntGUI:
         finally:
             self.root.after(0, self.automation_finished)
             
-    def parse_only(self):
-        if self.is_running:
-            return
-            
-        self.is_running = True
-        self.start_button.config(state=tk.DISABLED)
-        self.stop_button.config(state=tk.NORMAL)
-        self.progress.start()
-        
-        self.status_var.set("Тільки парсинг...")
-        self.log_message("📄 Запуск парсингу...")
-        
-        # Запускаємо в окремому потоці
-        self.automation_thread = threading.Thread(target=self.run_parse_only)
-        self.automation_thread.daemon = True
-        self.automation_thread.start()
-        
-    def run_parse_only(self):
-        try:
-            main_app = Main()
-            
-            pages_input = self.pages_var.get().strip()
-            if not pages_input:
-                pages_input = "1-5"
-                
-            if pages_input.isdigit():
-                pages_range = (1, int(pages_input) + 1)
-            elif "," in pages_input or "-" in pages_input:
-                separator = "," if "," in pages_input else "-"
-                n_from, n_to = pages_input.split(separator)
-                pages_range = (int(n_from), int(n_to) + 1)
-            else:
-                pages_range = (1, 6)
-                
-            for page in range(*pages_range):
-                if not self.is_running:
-                    break
-                self.root.after(0, lambda p=page: self.log_message(f"Парсинг сторінки {p}..."))
-                main_app.projects_scraper.save_projects_to_db(page)
-                
-            self.root.after(0, lambda: self.log_message("✅ Парсинг завершено!"))
-            self.root.after(0, lambda: self.status_var.set("Парсинг завершено"))
-            
-        except Exception as e:
-            self.root.after(0, lambda: self.log_message(f"💥 Помилка парсингу: {e}"))
-            self.root.after(0, lambda: self.status_var.set("Помилка парсингу"))
-        finally:
-            self.root.after(0, self.automation_finished)
-            
     def stop_automation(self):
         self.is_running = False
         self.log_message("🛑 Зупинка автоматизації...")
@@ -601,7 +841,7 @@ class FreelancehuntGUI:
                 self.projects_tree.insert("", tk.END, values=(
                     project.id,
                     project.title[:60] + "..." if len(project.title) > 60 else project.title,
-                    f"{project.price} UAH" if project.price else "Не вказано",
+                    f"{project.price} {project.currency}" if project.price else "Не вказано",
                     status,
                     "Сьогодні"  # Можна додати реальну дату з бази
                 ))
@@ -644,7 +884,7 @@ class FreelancehuntGUI:
             
     def load_log_file(self, event=None):
         log_file = self.log_file_var.get()
-        log_path = os.path.join("logs", log_file)
+        log_path = os.path.abspath(os.path.join("logs", log_file))
         
         self.log_display.config(state=tk.NORMAL)
         self.log_display.delete(1.0, tk.END)

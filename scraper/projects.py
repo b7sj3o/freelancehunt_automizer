@@ -37,14 +37,14 @@ class ProjectsScraper:
         return 0
 
 
-    def extract_price(self, row: WebElement) -> int:
+    def extract_price(self, row: WebElement) -> tuple[int, str]:
         try:
-            price_text = row.find_element(*ProjectsSelector.PRICE).text.strip()
-            price, currency = price_text.split()
-            return int(price) * settings.ALLOWED_CURRENCIES[currency]
+            price_text = row.find_element(*ProjectsSelector.PRICE).get_attribute("innerHTML").strip()
+            *prices, currency = price_text.split()
+            price = "".join(prices)
+            return int(price), currency
         except Exception as e:
-            logger.error(f"Failed to extract price")
-            return settings.DEFAULT_PRICE_UAH
+            return settings.DEFAULT_PRICE_UAH, "UAH"
 
     def save_projects_to_db(self, page: int = 1) -> None:
         self.driver.get(f"{settings.FREELANCEHUNT_PROJECTS_PAGE}&page={page}")
@@ -62,12 +62,15 @@ class ProjectsScraper:
                     continue
 
                 # Можна щось перевіряти, але в бд не зберігати, бо дані дуже швидко стають неактуальними
-                bids = self.extract_bids(row)
+                # bids = self.extract_bids(row)
+
+                price, currency = self.extract_price(row)
 
                 jobs.append(CreateProjectSchema(
                     title=title,
                     link=link,
-                    price=self.extract_price(row)
+                    price=price,
+                    currency=currency
                 ))
 
             except Exception as e:
@@ -79,6 +82,7 @@ class ProjectsScraper:
     def parse_project(self, project: Project) -> bool:
         self.driver.get(project.link)
 
+        # Alert "No more bids"
         try:
             self.driver.find_element(*ProjectSelector.NO_MORE_BIDS)
             update_project(project.id, UpdateProjectSchema(is_bid_skipped=True))
@@ -86,12 +90,14 @@ class ProjectsScraper:
         except Exception as e:
             pass
 
+        # Alert "Too many bids"
         try:
             self.driver.find_element(*ProjectSelector.TOO_MANY_BIDS)
             raise ValueError("Too many bids")
         except Exception as e:
             pass
 
+        # Alert "Already bid"
         try:
             self.driver.find_element(*ProjectSelector.ALREADY_BID)
             update_project(project.id, UpdateProjectSchema(is_bid_placed=True))
@@ -106,6 +112,10 @@ class ProjectsScraper:
 
             prompt = BASE_PROMPT.format(project_description=description)
             message = AI.prompt_to_ai(prompt)
+
+            # ! Якщо None, то AI далбайоб вернув пусту строку 3 рази підряд і некст тайм коли я запущу код, ця вакансія ще раз піде до AI
+            if not message:
+                return False
 
             if message == "false":
                 update_project(project.id, UpdateProjectSchema(is_bid_skipped=True))            
@@ -130,6 +140,18 @@ class ProjectsScraper:
             # click "Place bid"
             place_bid_button = self.driver.find_element(*ProjectSelector.SUBMIT_BID_BUTTON)
             place_bid_button.click()
+
+            # Alert "Error"
+            try:
+                self.driver.find_element(*ProjectSelector.ERROR_ALERT)
+                error_texts = self.driver.find_elements(*ProjectSelector.ERROR_TEXT)
+                error_text = "\n".join([text.text for text in error_texts])
+                logger.error(f"Errors: {error_text}")
+
+                # ! треба мб перевірити можливі помилки
+                return False
+            except Exception as e:
+                pass
 
             update_project(project.id, UpdateProjectSchema(bid_message=message, is_bid_placed=True))
             return True

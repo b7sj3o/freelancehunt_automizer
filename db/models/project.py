@@ -9,6 +9,7 @@ class Project(Base):
     title: Mapped[str] = mapped_column(nullable=False)
     link: Mapped[str] = mapped_column(nullable=False)
     price: Mapped[int] = mapped_column(nullable=True)
+    currency: Mapped[str] = mapped_column(nullable=True, default="UAH")
 
     bid_message: Mapped[str] = mapped_column(nullable=True)
 

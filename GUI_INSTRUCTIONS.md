@@ -81,7 +81,7 @@ OPENROUTER_AI_MODEL=openai/gpt-4o-mini
 
 # Налаштування
 DEFAULT_DAYS=3
-DEFAULT_PRICE=1000
+DEFAULT_PRICE_UAH=1000
 ```
 
 Потім натисніть "Завантажити з .env" в GUI.
