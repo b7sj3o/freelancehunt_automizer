@@ -1,11 +1,11 @@
 from selenium.webdriver.common.by import By
 
 class LoginPageSelectors:
-    EMAIL_INPUT = (By.CSS_SELECTOR, "input[type='text'].form-control")
-    PASSWORD_INPUT = (By.CSS_SELECTOR, "input[type='password'].form-control")
-    LOGIN_BUTTON = (By.CSS_SELECTOR, "button.btn-auth")
+    EMAIL_INPUT: tuple[By, str]
+    PASSWORD_INPUT: tuple[By, str]
+    LOGIN_BUTTON: tuple[By, str]
 
 class MFASelectors:
-    MFA_INPUT = (By.CLASS_NAME, "form-control")
-    MFA_BUTTON = (By.CLASS_NAME, "ladda-button")
-    ERROR_ALERT = (By.CLASS_NAME, "alert-error")
+    MFA_INPUT: tuple[By, str]
+    MFA_BUTTON: tuple[By, str]
+    ERROR_ALERT: tuple[By, str]

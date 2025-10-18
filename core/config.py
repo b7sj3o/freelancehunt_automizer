@@ -17,6 +17,13 @@ class Settings:
         self.FREELANCEHUNT_EMAIL = os.getenv("FREELANCEHUNT_EMAIL")
         self.FREELANCEHUNT_PASSWORD = os.getenv("FREELANCEHUNT_PASSWORD")
 
+        # Freelancer credentials
+        self.FREELANCER_LOGIN_PAGE = os.getenv("FREELANCER_LOGIN_PAGE")
+        self.FREELANCER_PROJECTS_PAGE = os.getenv("FREELANCER_PROJECTS_PAGE")
+        self.FREELANCER_EMAIL = os.getenv("FREELANCER_EMAIL")
+        self.FREELANCER_PASSWORD = os.getenv("FREELANCER_PASSWORD")
+
+
         # Default values
         self.DEFAULT_DAYS = 1
         self.DEFAULT_PRICE_UAH = 5000
@@ -33,15 +40,6 @@ class Settings:
         self.AI_TOP_P: float = float(os.getenv("AI_TOP_P"))
         self.AI_MAX_TOKENS: int = int(os.getenv("AI_MAX_TOKENS"))
         self.AI_SYSTEM_CONTENT: str = os.getenv("AI_SYSTEM_CONTENT")
-
-        # Currency
-        # TODO: можна апішку юзанути для актуальних курсів валют
-        self.ALLOWED_CURRENCIES: dict[str, int] = {
-            "UAH": 1,
-            "EUR": 47,
-            "USD": 42,
-            "PLN": 12,
-        }
 
         # Initialize client
         self.client = OpenAI(

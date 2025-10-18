@@ -1,12 +1,9 @@
 from sqlalchemy import select
 
-from core.logger_config import setup_logger
+from core.loggers import requests_logger as logger
 from db import Session
 from db.models import Project
 from schemas.project import CreateProjectSchema, UpdateProjectSchema
-
-
-logger = setup_logger(name="requests", log_file="requests.log")
 
 def get_all_projects() -> list[Project]:
     with Session() as session:

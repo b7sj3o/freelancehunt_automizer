@@ -13,11 +13,9 @@ sys.path.append(str(Path(__file__).parent.parent))
 from main import Main
 from db.requests import get_all_projects, get_active_projects
 from core.config import settings
-from core.logger_config import setup_logger
+from core.loggers import gui_logger as logger
 from auth.gui_login import GUILogin
 from drivers.browser import Browser
-
-logger = setup_logger(name="gui", log_file="gui.log")
 
 
 class MFADialog:

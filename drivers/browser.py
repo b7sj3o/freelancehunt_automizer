@@ -6,9 +6,7 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.remote.webelement import WebElement
 
 from core.config import settings
-from core.logger_config import setup_logger
-
-logger = setup_logger(name="browser", log_file="browser.log")
+from core.loggers import browser_logger as logger
 
 class Browser:
     def __init__(self):

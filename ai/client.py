@@ -1,9 +1,7 @@
 import json
 from core.config import settings
 from openai import OpenAI
-from core.logger_config import setup_logger
-
-logger = setup_logger(name="ai", log_file="ai.log")
+from core.loggers import ai_logger as logger
 
 class AI:
     @classmethod

@@ -19,6 +19,7 @@ class CreateProjectSchema(BaseModel):
     link: str
     price: int
     currency: str
+    marketplace: str = "freelancehunt"
 
     is_bid_placed: bool = False
     is_bid_skipped: bool = False
