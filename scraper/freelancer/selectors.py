@@ -1,9 +1,9 @@
 from selenium.webdriver.common.by import By
 
 class ProjectsSelector:
-    ALL_PROJECTS = (By.XPATH, "//tbody/tr")
+    ALL_PROJECTS = (By.XPATH, "//ng-trigger ng-trigger-slideInHorizontalAnimation/div")
 
-    TITLE = (By.XPATH, ".//a[contains(@class,'visitable')]")
+    TITLE = (By.XPATH, ".//h2[contains(@class,'text-color-inherit text-mid Title-text')]")
     BIDS = (By.XPATH, ".//*[self::span or self::small][contains(., 'став')]")
     PRICE = (By.XPATH, ".//div[contains(@class,'price')]")
 

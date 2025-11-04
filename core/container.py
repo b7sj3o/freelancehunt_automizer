@@ -1,11 +1,10 @@
 """Dependency Injection Container."""
-from db import Session
+from db import Base, Session, engine
 from db.repositories import ProjectRepository
-from drivers.browser import Browser
-from auth import Authenticator
-from scraper.freelancehunt import FreelancehuntProjectsScraper
-from scraper.freelancer import FreelancerProjectsScraper
+from scraper import get_scraper
 from services import ProjectService
+from core.browser import Browser
+from core.loggers import db_logger as logger
 
 
 class Container:
@@ -28,40 +27,33 @@ class Container:
         return Session()
     
     @property
-    def authenticator(self) -> Authenticator:
-        """Get authenticator instance."""
-        return Authenticator(self.browser)
-    
-    @property
     def project_repository(self) -> ProjectRepository:
         """Get project repository instance."""
         return ProjectRepository(self.db_session)
-    
-    @property
-    def freelancehunt_scraper(self) -> FreelancehuntProjectsScraper:
-        """Get Freelancehunt scraper instance."""
-        return FreelancehuntProjectsScraper(self.browser)
-    
-    @property
-    def freelancer_scraper(self) -> FreelancerProjectsScraper:
-        """Get Freelancer scraper instance."""
-        return FreelancerProjectsScraper(self.browser)
-    
-    @property
-    def freelancehunt_project_service(self) -> ProjectService:
+ 
+ 
+    def get_project_service(self, marketplace_name: str) -> ProjectService:
         """Get project service for Freelancehunt."""
         return ProjectService(
             repository=self.project_repository,
-            scraper=self.freelancehunt_scraper
+            scraper=get_scraper(marketplace_name, self.browser)
         )
     
-    @property
-    def freelancer_project_service(self) -> ProjectService:
-        """Get project service for Freelancer."""
-        return ProjectService(
-            repository=self.project_repository,
-            scraper=self.freelancer_scraper
-        )
+    def start_db(self):
+        """Start the database."""
+        logger.info("Starting the database...")
+        Base.metadata.create_all(bind=engine)
+        logger.info("Database was started.")
+
+    def drop_db(self):
+        """Drop the database."""
+        logger.info("Dropping the database...")
+        if input("Are you sure you want to drop the database? (y/N): ").lower() == "y":
+            Base.metadata.drop_all(bind=engine)
+            logger.info("Database was dropped.")
+        else:
+            logger.info("Database wasn't dropped.")
+            exit(1)
     
     def cleanup(self):
         """Cleanup resources."""
@@ -71,4 +63,5 @@ class Container:
         if self._session:
             self._session.close()
             self._session = None
+        
 

@@ -1,11 +1,11 @@
 """Freelancer.com authentication implementation."""
 from core.config import settings
-from drivers.browser import Browser
-from auth.base import BaseAuthenticator
+from core.browser import Browser
+from auth.base import AuthenticatorFactory
 from auth.freelancer.selectors import LoginPageSelectors
 
 
-class Login(BaseAuthenticator):
+class FreelancerAuthenticator(AuthenticatorFactory):
     """Freelancer.com authenticator."""
     
     # Class attributes

@@ -32,7 +32,7 @@ class AI:
                 logger.error(f"AI returned an empty response")
                 return None
 
-            return result
+        return result
 
 
     

@@ -1,11 +1,10 @@
 """Project service for business logic."""
-from typing import Optional
 
 from ai.client import AI
 from ai.prompts import BASE_PROMPT
 from db.models import Project
 from db.repositories.project_repository import ProjectRepository
-from scraper.base import BaseProjectScraper
+from scraper.base import ProjectsScraperFactory
 from schemas.project import UpdateProjectSchema
 from core.loggers import db_logger as logger
 from core.exceptions import (
@@ -24,10 +23,11 @@ class ProjectService:
     def __init__(
         self, 
         repository: ProjectRepository,
-        scraper: BaseProjectScraper
+        scraper: ProjectsScraperFactory,
     ):
         self.repository = repository
         self.scraper = scraper
+        
     
     def scrape_and_save_projects(self, page: int) -> int:
         """Scrape projects from a page and save to database.

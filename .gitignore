@@ -136,6 +136,8 @@ celerybeat.pid
 
 # Environments
 .env
+.env.*
+!.env.example
 .envrc
 .venv
 env/
@@ -205,4 +207,4 @@ __marimo__/
 # GUI settings
 gui_settings.json
 
-NEW_ARCHITECTURE.md
+logs/

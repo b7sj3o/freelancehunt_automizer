@@ -4,23 +4,23 @@ from abc import ABC, abstractmethod
 from typing import Optional, Callable
 from selenium.common.exceptions import TimeoutException, NoSuchElementException
 
-from drivers.browser import Browser
-from auth.selectors import LoginPageSelectors, MFASelectors
+from auth.selectors import LoginPageSelectorsFactory, MFASelectorsFactory
 from core.exceptions import (
     LoginFailedError,
     MFARequiredError,
     InvalidCredentialsError,
 )
+from core.browser import Browser
 from core.loggers import login_logger as logger
 
 
-class BaseAuthenticator(ABC):
+class AuthenticatorFactory(ABC):
     """Base authenticator with common authentication logic."""
     
     # Class attributes - override in subclasses
     REQUIRES_MFA: bool = True
-    LOGIN_SELECTORS: LoginPageSelectors
-    MFA_SELECTORS: Optional[MFASelectors]
+    LOGIN_SELECTORS: LoginPageSelectorsFactory
+    MFA_SELECTORS: Optional[MFASelectorsFactory]
     
     def __init__(self, browser: Browser, mfa_callback: Optional[Callable[[], str]] = None):
         """Initialize authenticator.

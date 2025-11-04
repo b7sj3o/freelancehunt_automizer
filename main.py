@@ -1,17 +1,19 @@
 """Main application entry point."""
 import logging
 
-from db import Base, engine
+from auth import get_authenticator
 from core.container import Container
 from core.loggers import freelancehunt_logger, freelancer_logger
 from core.exceptions import AuthenticationError, ScrapingError, DatabaseError
+from schemas.project import MarketplaceEnum
 from services import ProjectService
+from scraper import get_scraper
 
 
 class Application:
     def __init__(self, container: Container):
         self.container = container
-        Base.metadata.create_all(bind=engine)
+        self.container.start_db()
     
     def get_pages_range(self, tries: int = 5) -> tuple[int, int]:
         """Get pages range from user input.
@@ -63,16 +65,16 @@ class Application:
         self, 
         service: ProjectService,
         logger: logging.Logger,
-        marketplace_name: str
+        marketplace: MarketplaceEnum
     ) -> None:
         """Scrape projects and process them with bids.
         
         Args:
             service: ProjectService instance
             logger: Logger for this marketplace
-            marketplace_name: Name of marketplace (for logging)
+            marketplace: MarketplaceEnum
         """
-        logger.info(f"Starting {marketplace_name} automation")
+        logger.info(f"Starting {marketplace.value} automation")
         
         try:
             # Scrape projects from multiple pages
@@ -117,70 +119,40 @@ class Application:
             
             # Summary
             logger.info("=" * 50)
-            logger.info(f"{marketplace_name} Summary:")
+            logger.info(f"{marketplace.value} Summary:")
             logger.info(f"  New projects scraped: {total_scraped}")
             logger.info(f"  Bids placed: {projects_bid_placed}")
             logger.info(f"  Projects skipped: {projects_skipped}")
             logger.info("=" * 50)
             
         except Exception as e:
-            logger.error(f"Critical error in {marketplace_name} automation: {e}", exc_info=True)
+            logger.error(f"Critical error in {marketplace.value} automation: {e}", exc_info=True)
             raise
     
-    def run_freelancehunt(self) -> None:
-        """Run Freelancehunt automation."""
-        try:
-            # Authenticate
-            freelancehunt_logger.info("Starting Freelancehunt authentication")
-            self.container.authenticator.freelancehunt.login()
-            freelancehunt_logger.info("Authentication successful")
-            
-            # Process projects
-            service = self.container.freelancehunt_project_service
-            self.scrape_and_process_projects(
-                service=service,
-                logger=freelancehunt_logger,
-                marketplace_name="Freelancehunt"
-            )
-            
-        except AuthenticationError as e:
-            freelancehunt_logger.error(f"Authentication failed: {e}")
-            raise
-        except Exception as e:
-            freelancehunt_logger.error(f"Freelancehunt automation failed: {e}", exc_info=True)
-            raise
-    
-    def run_freelancer(self) -> None:
-        """Run Freelancer automation."""
-        try:
-            # Authenticate
-            freelancer_logger.info("Starting Freelancer authentication")
-            self.container.authenticator.freelancer.login()
-            freelancer_logger.info("Authentication successful")
-            
-            # Process projects
-            service = self.container.freelancer_project_service
-            self.scrape_and_process_projects(
-                service=service,
-                logger=freelancer_logger,
-                marketplace_name="Freelancer"
-            )
-            
-        except AuthenticationError as e:
-            freelancer_logger.error(f"Authentication failed: {e}")
-            raise
-        except Exception as e:
-            freelancer_logger.error(f"Freelancer automation failed: {e}", exc_info=True)
-            raise
-    
-    def run(self) -> None:
+    def run(self, marketplace: MarketplaceEnum, logger: logging.Logger) -> None:
         """Run full automation for all marketplaces."""
         try:
-            self.run_freelancehunt()
-            self.run_freelancer()
-        finally:
-            # Cleanup resources
-            self.container.cleanup()
+            # Authenticate
+            authenticator = get_authenticator(marketplace, self.container.browser)
+            authenticator.login()
+            
+            # Process projects
+            scraper = get_scraper(marketplace, self.container.browser)
+            service = ProjectService(
+                repository=self.container.project_repository,
+                scraper=scraper
+            )
+            self.scrape_and_process_projects(
+                service=service,
+                logger=logger,
+                marketplace=marketplace
+            )
+        except AuthenticationError as e:
+            logger.error(f"Authentication failed: {e}")
+            raise
+        except Exception as e:
+            logger.error(f"{marketplace.value} automation failed: {e}", exc_info=True)
+            raise
 
 
 def main():
@@ -189,7 +161,8 @@ def main():
     app = Application(container)
     
     try:
-        app.run_freelancer()
+        app.run(MarketplaceEnum.FREELANCEHUNT, freelancehunt_logger)
+        #  app.run(MarketplaceEnum.FREELANCER, freelancer_logger) # ! TODO Потрібно реалізувати селектори 
     except KeyboardInterrupt:
         print("\n\nAutomation interrupted by user")
     except Exception as e:

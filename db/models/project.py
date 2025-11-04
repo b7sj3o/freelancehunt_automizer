@@ -1,6 +1,7 @@
 from sqlalchemy.orm import Mapped, mapped_column
 from db import Base
-
+from schemas.project import MarketplaceEnum
+from sqlalchemy.types import Enum as SQLEnum
 
 class Project(Base):
     __tablename__ = "projects"
@@ -10,6 +11,7 @@ class Project(Base):
     link: Mapped[str] = mapped_column(nullable=False)
     price: Mapped[int] = mapped_column(nullable=True)
     currency: Mapped[str] = mapped_column(nullable=True, default="UAH")
+    marketplace: Mapped[MarketplaceEnum] = mapped_column(SQLEnum(MarketplaceEnum), nullable=False)
 
     bid_message: Mapped[str] = mapped_column(nullable=True)
 

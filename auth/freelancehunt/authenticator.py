@@ -1,11 +1,11 @@
 """Freelancehunt authentication implementation."""
 from core.config import settings
-from drivers.browser import Browser
-from auth.base import BaseAuthenticator
+from core.browser import Browser
+from auth.base import AuthenticatorFactory
 from auth.freelancehunt.selectors import LoginPageSelectors, MFASelectors
 
 
-class Login(BaseAuthenticator):
+class FreelanceHuntAuthenticator(AuthenticatorFactory):
     """Freelancehunt authenticator."""
     
     # Class attributes

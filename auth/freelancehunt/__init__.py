@@ -1,1 +1,1 @@
-from .login import Login
+from .authenticator import FreelanceHuntAuthenticator

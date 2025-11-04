@@ -20,6 +20,11 @@ class Browser:
     def get_options(self) -> Options:
         options = Options()
         options.add_experimental_option('excludeSwitches', ['enable-logging'])
+        if settings.IS_DOCKER:
+            options.add_argument("--headless=new")
+            options.add_argument("--no-sandbox")
+            options.add_argument("--disable-dev-shm-usage")
+            
         return options
 
     def close_driver(self) -> None:
