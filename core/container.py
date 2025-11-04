@@ -1,7 +1,9 @@
 """Dependency Injection Container."""
 from db import Base, Session, engine
 from db.repositories import ProjectRepository
+from schemas.project import MarketplaceEnum
 from scraper import get_scraper
+from scraper.base import ProjectsScraperFactory
 from services import ProjectService
 from core.browser import Browser
 from core.loggers import db_logger as logger
@@ -32,18 +34,12 @@ class Container:
         return ProjectRepository(self.db_session)
  
  
-    def get_project_service(self, marketplace_name: str) -> ProjectService:
-        """Get project service for Freelancehunt."""
-        return ProjectService(
-            repository=self.project_repository,
-            scraper=get_scraper(marketplace_name, self.browser)
-        )
-    
     def start_db(self):
         """Start the database."""
         logger.info("Starting the database...")
         Base.metadata.create_all(bind=engine)
         logger.info("Database was started.")
+
 
     def drop_db(self):
         """Drop the database."""
